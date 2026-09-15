@@ -15,10 +15,10 @@ st.caption(
 st.markdown("---")
 
 # ==============================================================================
-# 1. 4Tabs 통합 데이터셋 완전 코드 내장 (Zero External File Dependency)
+# 1. 4Tabs 통합 데이터셋 완전 코드 내장
 # ==============================================================================
 
-# Tab 1: 파나마 기후 및 운하 수위 리스크 (연도별 실측 시계열 데이터)
+# Tab 1: 파나마 기후 및 운하 수위 리스크
 PANAMA_CLIMATE_DATA = pd.DataFrame([
     {
         "기준연도": 2023,
@@ -208,7 +208,7 @@ SUEZ_CAPE_DATA = pd.DataFrame([
 # 2. 사이드바 설정
 # ==============================================================================
 st.sidebar.header("📁 데이터셋 업로드")
-file1 = st.sidebar.file_uploader("운항 실적 파일 (voyages)", type=["xlsx"])[span_3](start_span)[span_3](end_span)
+file1 = st.sidebar.file_uploader("운항 실적 파일 (voyages)", type=["xlsx"])
 
 # 연도별 수위/가뭄 리스크 시나리오 선택
 selected_year = st.sidebar.selectbox(
@@ -224,12 +224,12 @@ W_CARRIER = 0.20
 # 3. 알고리즘 연산 및 대시보드 렌더링
 # ==============================================================================
 if file1 is not None:
-    df_voyages = pd.read_excel(file1, sheet_name="voyages")[span_4](start_span)[span_4](end_span)
+    df_voyages = pd.read_excel(file1, sheet_name="voyages")
 
     # 1) 기본 실측 변수 집계
-    avg_freight = float(df_voyages["freight_rate_usd_per_teu"].mean())[span_5](start_span)[span_5](end_span)
-    avg_delay = float(df_voyages["delay_hours"].mean())[span_6](start_span)[span_6](end_span)
-    total_teu = int(len(df_voyages) * 10)[span_7](start_span)[span_7](end_span)
+    avg_freight = float(df_voyages["freight_rate_usd_per_teu"].mean())
+    avg_delay = float(df_voyages["delay_hours"].mean())
+    total_teu = int(len(df_voyages) * 10)
 
     # 2) 선택된 연도의 파나마 실측 기후/운하 지표 연계
     panama_row = PANAMA_CLIMATE_DATA[
@@ -253,19 +253,18 @@ if file1 is not None:
     )
     saved_hours_carrier = others_delay - m_delay
 
-    # 4) [보정] 동적 가중치 기반 정시성 Index 예측 모델
+    # 4) 동적 가중치 기반 정시성 Index 예측 모델
     pred_delay = (
         (avg_delay * 0.75) + (panama_wait * W_PANAMA) + (m_delay * W_CARRIER)
     )
     pred_on_time = max(10.0, 100.0 - (pred_delay * 0.95))
 
     # 5) 소형선 전환 및 물동량 조절 전략에 따른 세부 ROI 계산
-    # 가뭄 리스크 등급에 따라 소형선 전환 물동량 비중 동적 조절
     is_drought = panama_row["가뭄 리스크 등급"] == "High"
     small_vessel_ratio = 0.40 if is_drought else 0.20
     small_vessel_teu = total_teu * small_vessel_ratio
-    small_vessel_premium_rate = 0.10  # 소형선 피더/슬롯 추가 용선 비용 (+10%)
-    small_vessel_saved_hours = 14.5  # 대형선 흘수 대기 대비 절감 시간 (14.5시간)
+    small_vessel_premium_rate = 0.10
+    small_vessel_saved_hours = 14.5
 
     # 재무적 편익 (Savings)
     savings_carrier = total_teu * (saved_hours_carrier * W_CARRIER) * (avg_freight / 24.0)
@@ -324,7 +323,7 @@ if file1 is not None:
         st.markdown("### 3. 선사 포트폴리오 및 항만 Dwell Time 제어")
         realloc_m_teu = total_teu * 0.50
         st.markdown(
-            f"- **우선 배정 선사 (M사)**: 회전율 우수 선사에 **50.0% ({realloc_m_teu:,.0f} TEU)** 집중[span_8](start_span)[span_8](end_span)"
+            f"- **우선 배정 선사 (M사)**: 회전율 우수 선사에 **50.0% ({realloc_m_teu:,.0f} TEU)** 집중"
         )
         st.markdown(
             f"- **지연 단축 효과**: 타 선사 대비 **{saved_hours_carrier:.1f}시간/TEU** 절감"
@@ -335,7 +334,7 @@ if file1 is not None:
 
         st.markdown("### 4. 소형선 전환 반영 재무 ROI 상세 명세")
         st.markdown(
-            f"- **총 분석 물동량**: {total_teu:,} TEU (voyages {len(df_voyages):,}건)[span_9](start_span)[span_9](end_span)"
+            f"- **총 분석 물동량**: {total_teu:,} TEU (voyages {len(df_voyages):,}건)"
         )
         st.markdown(
             f"- **총 지연 손실 방지액 (Savings)**: **${total_savings:,.2f}** (소형선 방어액 포함)"
@@ -351,5 +350,5 @@ if file1 is not None:
         )
 else:
     st.info(
-        "👈 좌측 사이드바에 운항 실적 파일(voyages)을 업로드하고 분석 연도를 선택해 주세요[span_10](start_span)[span_10](end_span)."
+        "👈 좌측 사이드바에 운항 실적 파일(voyages)을 업로드하고 분석 연도를 선택해 주세요."
     )

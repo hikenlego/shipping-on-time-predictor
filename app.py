@@ -8,17 +8,17 @@ st.set_page_config(
     layout="wide",
 )
 
-st.title("🚢 글로벌 해상 정시성 예측 & ROI 분석 시스템")
+st.title("🚢 글로벌 해상 정시성 예측 & 종합 대응전략 ROI 대시보드")
 st.caption(
-    "실시간 기후 API 및 4개 통합 탭 데이터셋 기반 정량적 의사결정 지원 웹 서비스"
+    "실시간 기후 API 및 4Tabs 데이터셋 기반 8대 전략 통합 의사결정 시스템"
 )
 st.markdown("---")
 
 # ==============================================================================
-# 1. 4Tabs 통합 데이터셋 완전 코드 내장
+# 1. 4Tabs 통합 데이터셋 완전 내장 (Zero External File Dependency)
 # ==============================================================================
 
-# Tab 1: 파나마 기후 및 운하 수위 리스크
+# Tab 1: 파나마 기후 및 운하 수위 리스크 (연도별 실측 시계열 데이터)
 PANAMA_CLIMATE_DATA = pd.DataFrame([
     {
         "기준연도": 2023,
@@ -29,7 +29,7 @@ PANAMA_CLIMATE_DATA = pd.DataFrame([
         "가뭄 리스크 등급": "High",
         "파나마 노선 평균 운임 (USD/TEU)": 2680.5,
         "희망봉 우회 대비 운임 차이 (%)": -32.5,
-        "권고 대응전략": "가뭄 극심기: 소형선(흘수 극복) 40% 전환 및 희망봉 우회 40% 배정",
+        "권고 대응전략": "가뭄 극심기: 소형선(흘수 극복) 40% 전환 및 희망봉 우회 40% 분산",
     },
     {
         "기준연도": 2024,
@@ -40,7 +40,7 @@ PANAMA_CLIMATE_DATA = pd.DataFrame([
         "가뭄 리스크 등급": "High",
         "파나마 노선 평균 운임 (USD/TEU)": 2550.0,
         "희망봉 우회 대비 운임 차이 (%)": -27.0,
-        "권고 대응전략": "가뭄 지속기: 소형선 35% 투입 및 예약 슬롯 경매 선점",
+        "권고 대응전략": "가뭄 지속기: 소형선 35% 투입 및 슬롯 경매 선점",
     },
     {
         "기준연도": 2025,
@@ -51,7 +51,7 @@ PANAMA_CLIMATE_DATA = pd.DataFrame([
         "가뭄 리스크 등급": "Low",
         "파나마 노선 평균 운임 (USD/TEU)": 2400.0,
         "희망봉 우회 대비 운임 차이 (%)": -22.0,
-        "권고 대응전략": "수위 회복기: 정기 파나마 노선 복귀(대형선 70%), 소형선 비중 축소",
+        "권고 대응전략": "수위 회복기: 정기 대형선 복귀(70%) 및 소형선 축소",
     },
     {
         "기준연도": 2026,
@@ -62,7 +62,7 @@ PANAMA_CLIMATE_DATA = pd.DataFrame([
         "가뭄 리스크 등급": "Low",
         "파나마 노선 평균 운임 (USD/TEU)": 2380.0,
         "희망봉 우회 대비 운임 차이 (%)": -21.5,
-        "권고 대응전략": "정상 운영기: 표준 스케줄 유지 및 대형선 직기항 70% 운영",
+        "권고 대응전략": "정상 운영기: 직기항 70% 유지 및 상시 모니터링",
     },
 ])
 
@@ -86,7 +86,7 @@ CAX_DWELL_DATA = pd.DataFrame([
         "수입 컨테이너 체류일수 (일)": 3.5,
         "선석 대기시간 (시간)": 12.0,
         "혼잡도 등급": "Moderate",
-        "권고 전략": "환적 피더선 배정 및 얼라이언스 선복 공유",
+        "권고 전략": "세컨더리 항만 분산 및 공컨테이너 전용선 긴급 회수",
     },
     {
         "항만": "Rotterdam",
@@ -96,7 +96,7 @@ CAX_DWELL_DATA = pd.DataFrame([
         "수입 컨테이너 체류일수 (일)": 4.5,
         "선석 대기시간 (시간)": 18.5,
         "혼잡도 등급": "High",
-        "권고 전략": "Dwell Time 3.5일 초과 시 내륙 바지선/철도 복합운송 30% 전환",
+        "권고 전략": "체류 3.5일 초과 시 내륙 철도/바지선 30% 복합운송",
     },
     {
         "항만": "New York",
@@ -106,7 +106,7 @@ CAX_DWELL_DATA = pd.DataFrame([
         "수입 컨테이너 체류일수 (일)": 4.8,
         "선석 대기시간 (시간)": 22.0,
         "혼잡도 등급": "High",
-        "권고 전략": "야간 게이트 반입 및 내륙 철도 인터모달 운송 직결",
+        "권고 전략": "야간/비피크 게이트 반입 및 직항(Direct) 우선 배정",
     },
 ])
 
@@ -141,30 +141,12 @@ CARRIER_PERFORMANCE_DATA = pd.DataFrame([
     },
     {
         "선사": "G사",
-        "노선": "Suez Canal",
-        "표본 항해 수 (건)": 387,
-        "평균 회전율 (일)": 37.5,
-        "평균 지연시간 (시간)": 60.8,
-        "24시간 초과 지연 비율 (%)": 99.5,
-        "평균 운임 (USD/TEU)": 2671.9,
-    },
-    {
-        "선사": "G사",
         "노선": "Panama Canal",
         "표본 항해 수 (건)": 922,
         "평균 회전율 (일)": 27.7,
         "평균 지연시간 (시간)": 64.4,
         "24시간 초과 지연 비율 (%)": 98.8,
         "평균 운임 (USD/TEU)": 2484.3,
-    },
-    {
-        "선사": "G사",
-        "노선": "Cape of Good Hope",
-        "표본 항해 수 (건)": 531,
-        "평균 회전율 (일)": 49.6,
-        "평균 지연시간 (시간)": 62.9,
-        "24시간 초과 지연 비율 (%)": 99.1,
-        "평균 운임 (USD/TEU)": 1849.7,
     },
     {
         "선사": "C사",
@@ -210,12 +192,10 @@ SUEZ_CAPE_DATA = pd.DataFrame([
 st.sidebar.header("📁 데이터셋 업로드")
 file1 = st.sidebar.file_uploader("운항 실적 파일 (voyages)", type=["xlsx"])
 
-# 연도별 수위/가뭄 리스크 시나리오 선택
 selected_year = st.sidebar.selectbox(
-    "분석 기준 연도 (수위/기후 시나리오)", [2023, 2024, 2025, 2026], index=3
+    "분석 기준 연도 (기후 시나리오)", [2023, 2024, 2025, 2026], index=3
 )
 
-# 모델 핵심 가중치 정의
 W_PANAMA = 0.45
 W_CAX = 0.35
 W_CARRIER = 0.20
@@ -226,19 +206,18 @@ W_CARRIER = 0.20
 if file1 is not None:
     df_voyages = pd.read_excel(file1, sheet_name="voyages")
 
-    # 1) 기본 실측 변수 집계
     avg_freight = float(df_voyages["freight_rate_usd_per_teu"].mean())
     avg_delay = float(df_voyages["delay_hours"].mean())
     total_teu = int(len(df_voyages) * 10)
 
-    # 2) 선택된 연도의 파나마 실측 기후/운하 지표 연계
+    # 파나마 실측치 연계
     panama_row = PANAMA_CLIMATE_DATA[
         PANAMA_CLIMATE_DATA["기준연도"] == selected_year
     ].iloc[0]
     panama_wait = float(panama_row["평균 통항 대기시간 (시간)"])
     premium_pct = float(abs(panama_row["희망봉 우회 대비 운임 차이 (%)"])) / 100.0
 
-    # 3) 선사별 운항 실측 지표 연계
+    # 선사 실측치 연계
     m_delay = float(
         CARRIER_PERFORMANCE_DATA[
             (CARRIER_PERFORMANCE_DATA["선사"] == "M사")
@@ -253,33 +232,60 @@ if file1 is not None:
     )
     saved_hours_carrier = others_delay - m_delay
 
-    # 4) 동적 가중치 기반 정시성 Index 예측 모델
+    # 예측 지연 및 정시성 지수 연산
     pred_delay = (
         (avg_delay * 0.75) + (panama_wait * W_PANAMA) + (m_delay * W_CARRIER)
     )
     pred_on_time = max(10.0, 100.0 - (pred_delay * 0.95))
 
-    # 5) 소형선 전환 및 물동량 조절 전략에 따른 세부 ROI 계산
+    # --------------------------------------------------------------------------
+    # 8대 세부 전략 기반 종합 재무 ROI 모델링
+    # --------------------------------------------------------------------------
     is_drought = panama_row["가뭄 리스크 등급"] == "High"
+    
+    # 1. 소형선 전환 전략 (흘수 제한 극복)
     small_vessel_ratio = 0.40 if is_drought else 0.20
     small_vessel_teu = total_teu * small_vessel_ratio
     small_vessel_premium_rate = 0.10
     small_vessel_saved_hours = 14.5
-
-    # 재무적 편익 (Savings)
-    savings_carrier = total_teu * (saved_hours_carrier * W_CARRIER) * (avg_freight / 24.0)
-    savings_port = total_teu * (8.5 * W_CAX) * (avg_freight / 24.0)
     savings_small_vessel = small_vessel_teu * small_vessel_saved_hours * (avg_freight / 24.0)
-    total_savings = savings_carrier + savings_port + savings_small_vessel
+    cost_small_vessel = small_vessel_teu * avg_freight * small_vessel_premium_rate
 
-    # 전략 집행 비용 (Cost)
+    # 2. 직항(Direct) 및 세컨더리 항만(Bypass Port) 피더 분산 전략
+    direct_bypass_teu = total_teu * 0.25
+    direct_saved_hours = 8.0
+    savings_direct = direct_bypass_teu * direct_saved_hours * (avg_freight / 24.0)
+    cost_feeder_feeder = direct_bypass_teu * avg_freight * 0.03
+
+    # 3. 비피크(Off-Peak) 윈도우 스케줄링 전략
+    offpeak_teu = total_teu * 0.30
+    offpeak_saved_hours = 6.0
+    savings_offpeak = offpeak_teu * offpeak_saved_hours * (avg_freight / 24.0)
+    cost_offpeak = offpeak_teu * 30.0
+
+    # 4. 공컨테이너 재배치 전용선 운영 전략 (CAx < 0.5 대응)
+    reposition_teu = total_teu * 0.15
+    reposition_saved_hours = 12.0
+    savings_reposition = reposition_teu * reposition_saved_hours * (avg_freight / 24.0)
+    cost_reposition = reposition_teu * 150.0
+
+    # 5. 선사 포트폴리오 최적화 편익 (M사 집중 배정)
+    savings_carrier = total_teu * (saved_hours_carrier * W_CARRIER) * (avg_freight / 24.0)
+
+    # 6. 우회 노선 및 대형선 슬롯 예약 비용
     reroute_ratio = 0.40 if is_drought else 0.20
     cost_rerouting = total_teu * reroute_ratio * avg_freight * premium_pct
     cost_slot_reserve = total_teu * 0.20 * avg_freight * 0.02
-    cost_small_vessel = small_vessel_teu * avg_freight * small_vessel_premium_rate
-    total_cost = cost_rerouting + cost_slot_reserve + cost_small_vessel
 
-    # 순이익 및 최종 ROI
+    # 재무적 종합 집계
+    total_savings = (
+        savings_carrier + savings_small_vessel + savings_direct + 
+        savings_offpeak + savings_reposition
+    )
+    total_cost = (
+        cost_rerouting + cost_slot_reserve + cost_small_vessel + 
+        cost_feeder_feeder + cost_offpeak + cost_reposition
+    )
     net_benefit = total_savings - total_cost
     roi = (net_benefit / total_cost) * 100.0 if total_cost > 0 else 0.0
 
@@ -292,61 +298,55 @@ if file1 is not None:
 
     st.markdown("---")
 
-    # 하단 구체적 수치 기반 분석 리포트 매트릭스
-    st.subheader(f"🎯 [{selected_year}년 기준] 실측 수위 연동 실행 전략 매트릭스")
+    # 하단 8대 세부 전략 매트릭스 렌더링
+    st.subheader(f"🎯 [{selected_year}년 기준] 8대 세부 실행 전략 및 재무 ROI 명세")
 
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown("### 1. 파나마 기후/수위 리스크 대응 물동량 조절")
+        st.markdown("### 1. 파나마 기후/수위 대응 전략 (전략 1, 2)")
         st.markdown(
-            f"- **일일 쿼터 연동 배분**: 기준연도({panama_row['일일 통항 허용 척수 (척/일)']}척/일) 기준 **파나마 {100 - int(reroute_ratio*100)}% / 우회 {int(reroute_ratio*100)}%** 동적 분산"
+            f"- **물동량 조절**: 파나마 **{100 - int(reroute_ratio*100)}%** / 우회 **{int(reroute_ratio*100)}%** 동적 분산"
         )
         st.markdown(
-            f"- **가뭄 등급 판정**: **{panama_row['가뭄 리스크 등급']}** (전략: {panama_row['권고 대응전략']})"
+            f"- **소형선 전환**: 물동량의 **{small_vessel_ratio*100:.0f}% ({small_vessel_teu:,.0f} TEU)** 투입으로 흘수 병목 극복"
         )
         st.markdown(
-            f"- **운하 운임 프리미엄 방어**: 희망봉 우회 대비 운임 차이 **{premium_pct * 100.0:.1f}%** 수준 적용"
+            f"- **지연 감축 및 방어액**: **{small_vessel_saved_hours:.1f}시간/TEU 단축** (방어액 **${savings_small_vessel:,.0f}**)"
         )
 
-        st.markdown("### 2. 저수위 극복을 위한 소형 선박(피더/파나막스) 전환")
+        st.markdown("### 2. 컨테이너 불균형 및 항만 적체 극복 (전략 3, 4, 5)")
         st.markdown(
-            f"- **소형선 전환 물동량**: 전체 물동량의 **{small_vessel_ratio*100:.0f}% ({small_vessel_teu:,.0f} TEU)** 투입"
+            f"- **직항/세컨더리 분산**: **25% ({direct_bypass_teu:,.0f} TEU)** 배정으로 적체 회피 (**{direct_saved_hours:.1f}h 단축**)"
         )
         st.markdown(
-            f"- **흘수(Draft) 병목 해소**: 대형선 저수위 통항 대기 대비 **{small_vessel_saved_hours:.1f}시간/TEU** 단축"
+            f"- **비피크 윈도우 스케줄링**: 대형선 일시 하역 회피를 위해 **30% ({offpeak_teu:,.0f} TEU)** 야간/비피크 반입 (**{offpeak_saved_hours:.1f}h 단축**)"
         )
         st.markdown(
-            f"- **소형선 기회비용 방어액**: 공급망 정체 방지로 **${savings_small_vessel:,.0f}** 절감"
+            f"- **공컨테이너 전용선 운영**: 아시아 결손 해소를 위해 **15% ({reposition_teu:,.0f} TEU)** 긴급 재배치 (**${savings_reposition:,.0f} 확보**)"
         )
 
     with c2:
-        st.markdown("### 3. 선사 포트폴리오 및 항만 Dwell Time 제어")
+        st.markdown("### 3. 선사 회전율 최적화 포트폴리오 (전략 6)")
         realloc_m_teu = total_teu * 0.50
         st.markdown(
-            f"- **우선 배정 선사 (M사)**: 회전율 우수 선사에 **50.0% ({realloc_m_teu:,.0f} TEU)** 집중"
+            f"- **우선 배정 선사 (M사)**: 회전율 우수 선사에 **50.0% ({realloc_m_teu:,.0f} TEU)** 집중 배정"
         )
         st.markdown(
-            f"- **지연 단축 효과**: 타 선사 대비 **{saved_hours_carrier:.1f}시간/TEU** 절감"
-        )
-        st.markdown(
-            "- **항만 Dwell Time 제어**: 체류 3.5일 초과 시 철도 전환(30%)을 통해 **8.5시간/TEU** 감축"
+            f"- **기타 선사 분산**: G/C/O사에 각 16.7% 배정, 지연 **{saved_hours_carrier:.1f}시간/TEU** 절감"
         )
 
-        st.markdown("### 4. 소형선 전환 반영 재무 ROI 상세 명세")
+        st.markdown("### 4. 8대 전략 통합 재무 ROI 상세 명세")
         st.markdown(
-            f"- **총 분석 물동량**: {total_teu:,} TEU (voyages {len(df_voyages):,}건)"
+            f"- **총 분석 물동량**: {total_teu:,} TEU (총 {len(df_voyages):,}건 연동)"
         )
         st.markdown(
-            f"- **총 지연 손실 방지액 (Savings)**: **${total_savings:,.2f}** (소형선 방어액 포함)"
+            f"- **총 지연 손실 방지액 (Savings)**: **${total_savings:,.2f}**"
         )
         st.markdown(
-            f"- **소형선 전환 집행 비용**: **${cost_small_vessel:,.2f}** (TEU당 10% 할증 반영)"
+            f"- **소형선+피더+오프피크+전용선 집행 비용**: **${total_cost:,.2f}**"
         )
         st.markdown(
-            f"- **총 전략 집행 비용 (Cost)**: **${total_cost:,.2f}**"
-        )
-        st.markdown(
-            f"- **최종 순 재무적 이익 (Net Benefit)**: **${net_benefit:,.0f}** (ROI: **{roi:.2f}%**)"
+            f"- **최종 순 재무적 이익 (Net Benefit)**: **${net_benefit:,.0f}** (최종 ROI: **{roi:.2f}%**)"
         )
 else:
     st.info(

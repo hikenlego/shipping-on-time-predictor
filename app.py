@@ -14,7 +14,7 @@ st.caption(
 )
 st.markdown("---")
 
-# 1. 4Tabs 통합 데이터셋 완전 코드 내장 (외부 파일 업로드 불필요)
+# 1. 4Tabs 통합 데이터셋 완전 코드 내장
 PANAMA_CLIMATE_DATA = pd.DataFrame([
     {
         "기준연도": 2023,
@@ -144,13 +144,11 @@ CARRIER_PERFORMANCE_DATA = pd.DataFrame([
     },
 ])
 
-# 2. 사이드바: 운항 실적 파일 단 1개만 요구
+# 2. 사이드바: 운항 실적 파일 단 1개 요구
 st.sidebar.header("📁 데이터셋 업로드")
-file1 = st.sidebar.file_uploader(
-    "운항 실적 파일 (voyages)", type=["xlsx"]
-)
+file1 = st.sidebar.file_uploader("운항 실적 파일 (voyages)", type=["xlsx"])
 
-# 3. 고정 최적 가중치 (내부 알고리즘 자동 적용)
+# 3. 고정 최적 가중치
 W_PANAMA = 0.45
 W_CAX = 0.35
 W_CARRIER = 0.20
@@ -217,70 +215,73 @@ if file1 is not None:
 
   c1, c2 = st.columns(2)
   with c1:
-    st.markdown("<b>1. 선사 물동량 재배치 세부 실행안</b>", unsafe_allow_html=True)
+    st.markdown("### 1. 선사 물동량 재배치 세부 실행안")
     realloc_m_teu = total_teu * 0.50
     realloc_other_teu = total_teu * 0.1667
     carrier_savings_amt = total_teu * saved_hours_carrier * (avg_freight / 24.0)
 
-    st.write(
-        "- <b>우선 배정 선사 (M사)</b>: 물동량 비중 <b>50.0%"
-        f" ({realloc_m_teu:,.0f} TEU)</b> 확대"
+    st.markdown(
+        "- **우선 배정 선사 (M사)**: 물동량 비중 **50.0%"
+        f" ({realloc_m_teu:,.0f} TEU)** 확대"
     )
-    st.write(
-        "- <b>기타 선사 (G/C/O사)</b>: 각 <b>16.7%"
-        f" ({realloc_other_teu:,.0f} TEU)</b> 분산 배정"
+    st.markdown(
+        "- **기타 선사 (G/C/O사)**: 각 **16.7%"
+        f" ({realloc_other_teu:,.0f} TEU)** 분산 배정"
     )
-    st.write(
-        "- <b>지연 단축 효과</b>: 타 선사 대비"
-        f" <b>{saved_hours_carrier:.1f}시간/TEU 단축</b>"
+    st.markdown(
+        "- **지연 단축 효과**: 타 선사 대비"
+        f" **{saved_hours_carrier:.1f}시간/TEU 단축**"
     )
-    st.write(f"- <b>기회비용 절감액</b>: 총 <b>${carrier_savings_amt:,.0f}</b> 절감")
+    st.markdown(
+        f"- **기회비용 절감액**: 총 **${carrier_savings_amt:,.0f}** 절감"
+    )
 
-    st.markdown("<b>2. 운하 및 슬롯 운영 임계치 전략</b>", unsafe_allow_html=True)
-    st.write(
-        "- <b>파나마 운하 쿼터</b>: 일일"
-        f" <b>{panama_row['일일 통항 허용 척수 (척/일)']}척</b> 기준 운항"
+    st.markdown("### 2. 운하 및 슬롯 운영 임계치 전략")
+    st.markdown(
+        "- **파나마 운하 쿼터**: 일일"
+        f" **{panama_row['일일 통항 허용 척수 (척/일)']}척** 기준 운항"
     )
-    st.write(
-        "- <b>노선 할당 비중</b>: 파나마 정기 노선 <b>70.0%"
-        f" ({total_teu * 0.70:,.0f} TEU)</b> 유지"
+    st.markdown(
+        "- **노선 할당 비중**: 파나마 정기 노선 **70.0%"
+        f" ({total_teu * 0.70:,.0f} TEU)** 유지"
     )
-    st.write(
-        "- <b>우회 비상 전환 조건</b>: 대기선박 <b>20척 초과</b> 또는 대기시간"
-        " <b>12시간 초과</b> 시 전환"
+    st.markdown(
+        "- **우회 비상 전환 조건**: 대기선박 **20척 초과** 또는 대기시간"
+        " **12시간 초과** 시 전환"
     )
-    st.write(
-        "- <b>우회 프리미엄 비용 반영</b>: 운임 차이 <b>"
-        f"{premium_pct * 100.0:.1f}%</b> 수준 적용"
+    st.markdown(
+        "- **우회 프리미엄 비용 반영**: 운임 차이"
+        f" **{premium_pct * 100.0:.1f}%** 수준 적용"
     )
 
   with c2:
+    st.markdown("### 3. 항만 및 내륙 체류(Dwell Time) 제어 지표")
     st.markdown(
-        "<b>3. 항만 및 내륙 체류(Dwell Time) 제어 지표</b>",
-        unsafe_allow_html=True,
+        "- **CAx 수출항 관리 목표**: CAx 지수 **0.35 이하** 유지 시 선적"
+        " 전 체류 **2.5일 이내** 고수"
     )
-    st.write(
-        "- <b>CAx 수출항 관리 목표</b>: CAx 지수 <b>0.35 이하</b> 유지 시 선적"
-        " 전 체류 <b>2.5일 이내</b> 고수"
+    st.markdown(
+        "- **수입항 Dwell Time 트리거**: 체류시간 **3.5일 초과** 시 내륙"
+        " 철도 수송 비중 **30%** 확대"
     )
-    st.write(
-        "- <b>수입항 Dwell Time 트리거</b>: 체류시간 <b>3.5일 초과</b> 시 내륙"
-        " 철도 수송 비중 <b>30%</b> 확대"
-    )
-    st.write(
-        "- <b>항만 체류시간 감축 연동</b>: 목표 절감 시간 <b>8.5시간/TEU</b> 반영"
+    st.markdown(
+        "- **항만 체류시간 감축 연동**: 목표 절감 시간 **8.5시간/TEU** 반영"
     )
 
-    st.markdown("<b>4. 정량적 ROI 재무 내역 상세</b>", unsafe_allow_html=True)
-    st.write(
-        f"- <b>총 분석 물동량</b>: {total_teu:,} TEU (voyages"
+    st.markdown("### 4. 정량적 ROI 재무 내역 상세")
+    st.markdown(
+        f"- **총 분석 물동량**: {total_teu:,} TEU (voyages"
         f" {len(df_voyages):,}건 연동)"
     )
-    st.write(f"- <b>시간당 기회손실 단가</b>: ${avg_freight / 24.0:.2f} / hr/TEU")
-    st.write(f"- <b>총 지연 손실 방지액 (Savings)</b>: ${total_savings:,.2f}")
-    st.write(f"- <b>총 전략 집행 비용 (Cost)</b>: ${total_cost:,.2f}")
-    st.write(
-        f"- <b>최종 순 재무적 이익 (Net Benefit)</b>: ${net_benefit:,.0f}"
+    st.markdown(
+        f"- **시간당 기회손실 단가**: ${avg_freight / 24.0:.2f} / hr/TEU"
+    )
+    st.markdown(
+        f"- **총 지연 손실 방지액 (Savings)**: ${total_savings:,.2f}"
+    )
+    st.markdown(f"- **총 전략 집행 비용 (Cost)**: ${total_cost:,.2f}")
+    st.markdown(
+        f"- **최종 순 재무적 이익 (Net Benefit)**: ${net_benefit:,.0f}"
     )
 else:
   st.info(

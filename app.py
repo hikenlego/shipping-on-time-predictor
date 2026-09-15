@@ -16,10 +16,9 @@ st.caption(
 st.markdown("---")
 
 # ==============================================================================
-# 1. 4Tabs 통합 데이터셋 완전 내장 (Zero External File Dependency)
+# 1. 4Tabs 통합 데이터셋 완전 내장
 # ==============================================================================
 
-# Tab 1: 파나마 기후 및 운하 수위 리스크
 PANAMA_CLIMATE_DATA = pd.DataFrame([
     {
         "기준연도": 2023,
@@ -67,7 +66,6 @@ PANAMA_CLIMATE_DATA = pd.DataFrame([
     },
 ])
 
-# Tab 2: 항만 혼잡도 및 CAx 컨테이너 체류 데이터
 CAX_DWELL_DATA = pd.DataFrame([
     {
         "항만": "Busan",
@@ -111,7 +109,6 @@ CAX_DWELL_DATA = pd.DataFrame([
     },
 ])
 
-# Tab 3: 선사별 노선 운항 실적 및 지연 편차 데이터
 CARRIER_PERFORMANCE_DATA = pd.DataFrame([
     {
         "선사": "M사",
@@ -169,30 +166,12 @@ CARRIER_PERFORMANCE_DATA = pd.DataFrame([
     },
 ])
 
-# Tab 4: 수에즈 vs 희망봉 우회 노선 분석 데이터
-SUEZ_CAPE_DATA = pd.DataFrame([
-    {
-        "구분": "정상 항로 (Suez Canal)",
-        "표준 항해일수 (일)": 30.0,
-        "추가 항해거리 (nm)": 0,
-        "유류비 및 운임 지수": 100.0,
-        "지연 위험 요인": "홍해 안보 분쟁 및 전쟁위험보험료 가산",
-    },
-    {
-        "구분": "우회 항로 (Cape of Good Hope)",
-        "표준 항해일수 (일)": 42.0,
-        "추가 항해거리 (nm)": 3500,
-        "유류비 및 운임 지수": 128.5,
-        "지연 위험 요인": "항해거리 증가에 따른 리드타임 버퍼 확보 필요",
-    },
-])
-
 # ==============================================================================
-# 2. 사이드바 설정 (어떤 파일명이든/확장자든 유연하게 업로드 지원)
+# 2. 사이드바 설정
 # ==============================================================================
 st.sidebar.header("📁 데이터셋 업로드")
 uploaded_file = st.sidebar.file_uploader(
-    "운항 실적 파일 업로드 (파일명 무관, .xlsx/.csv)",
+    "운항 실적 파일 업로드 (어떤 파일명이든 지원)",
     type=["xlsx", "xls", "csv"],
 )
 
@@ -205,41 +184,49 @@ W_CAX = 0.35
 W_CARRIER = 0.20
 
 # ==============================================================================
-# 3. 파일 지능형 자동 파싱 및 알고리즘 연산
+# 3. 안전한 바이너리 버퍼 로딩 및 연산
 # ==============================================================================
 if uploaded_file is not None:
     try:
-        # 파일 확장자에 따른 지능형 데이터 로딩
-        if uploaded_file.name.endswith(".csv"):
-            df_voyages = pd.read_csv(uploaded_file)
-        else:
-            excel_file = pd.ExcelFile(uploaded_file)
-            sheet_names = excel_file.sheet_names
-            
-            # 'voyages' 시트가 있으면 우선 읽고, 없으면 첫 번째 시트 또는 관련 컬럼 보유 시트 탐색
-            target_sheet = sheet_names[0]
-            for s in sheet_names:
-                if "voyage" in s.lower():
-                    target_sheet = s
-                    break
-            df_voyages = pd.read_excel(uploaded_file, sheet_name=target_sheet)
+        # 파일 내용을 바이트 버퍼로 완전히 읽어 들임
+        file_bytes = uploaded_file.read()
+        bytes_buffer = io.BytesIO(file_bytes)
 
-        # 필수 컬럼 자동 탐색 및 기본값 방어 로직
-        freight_col = next((c for c in df_voyages.columns if "freight" in c.lower() or "운임" in c), None)
-        delay_col = next((c for c in df_voyages.columns if "delay" in c.lower() or "지연" in c), None)
+        # 1) CSV 또는 Excel 파싱 (엔진 자동 Fallback)
+        is_csv = uploaded_file.name.lower().endswith(".csv")
+        if is_csv:
+            df_voyages = pd.read_csv(bytes_buffer)
+        else:
+            try:
+                # 1차 시도: openpyxl 엔진으로 시트 탐색
+                xl = pd.ExcelFile(bytes_buffer, engine="openpyxl")
+                target_sheet = "voyages" if "voyages" in xl.sheet_names else xl.sheet_names[0]
+                df_voyages = pd.read_excel(xl, sheet_name=target_sheet)
+            except Exception:
+                # 2차 시도: xlrd 또는 기본 엔진
+                bytes_buffer.seek(0)
+                try:
+                    df_voyages = pd.read_excel(bytes_buffer, sheet_name=0)
+                except Exception:
+                    bytes_buffer.seek(0)
+                    df_voyages = pd.read_excel(bytes_buffer, engine="openpyxl", sheet_name=0)
+
+        # 2) 필수 컬럼 탐색 및 기본값 방어
+        freight_col = next((c for c in df_voyages.columns if "freight" in str(c).lower() or "운임" in str(c)), None)
+        delay_col = next((c for c in df_voyages.columns if "delay" in str(c).lower() or "지연" in str(c)), None)
 
         avg_freight = float(df_voyages[freight_col].mean()) if freight_col else 2484.3
         avg_delay = float(df_voyages[delay_col].mean()) if delay_col else 56.0
         total_teu = int(len(df_voyages) * 10)
 
-        # 파나마 실측치 연계
+        # 3) 파나마 실측치 연계
         panama_row = PANAMA_CLIMATE_DATA[
             PANAMA_CLIMATE_DATA["기준연도"] == selected_year
         ].iloc[0]
         panama_wait = float(panama_row["평균 통항 대기시간 (시간)"])
         premium_pct = float(abs(panama_row["희망봉 우회 대비 운임 차이 (%)"])) / 100.0
 
-        # 선사 실측치 연계
+        # 4) 선사 실측치 연계
         m_delay = float(
             CARRIER_PERFORMANCE_DATA[
                 (CARRIER_PERFORMANCE_DATA["선사"] == "M사")
@@ -254,16 +241,16 @@ if uploaded_file is not None:
         )
         saved_hours_carrier = others_delay - m_delay
 
-        # 예측 지연 및 정시성 지수 연산
+        # 5) 지연시간 및 정시성 지수 연산
         pred_delay = (
             (avg_delay * 0.75) + (panama_wait * W_PANAMA) + (m_delay * W_CARRIER)
         )
         pred_on_time = max(10.0, 100.0 - (pred_delay * 0.95))
 
-        # 8대 세부 전략 기반 종합 재무 ROI 모델링
+        # 6) 8대 전략 기반 재무 ROI 계산
         is_drought = panama_row["가뭄 리스크 등급"] == "High"
 
-        # 1. 소형선 전환 전략
+        # 소형선 전환
         small_vessel_ratio = 0.40 if is_drought else 0.20
         small_vessel_teu = total_teu * small_vessel_ratio
         small_vessel_premium_rate = 0.10
@@ -271,33 +258,33 @@ if uploaded_file is not None:
         savings_small_vessel = small_vessel_teu * small_vessel_saved_hours * (avg_freight / 24.0)
         cost_small_vessel = small_vessel_teu * avg_freight * small_vessel_premium_rate
 
-        # 2. 직항 및 세컨더리 피더 분산 전략
+        # 직항/세컨더리 분산
         direct_bypass_teu = total_teu * 0.25
         direct_saved_hours = 8.0
         savings_direct = direct_bypass_teu * direct_saved_hours * (avg_freight / 24.0)
         cost_feeder_feeder = direct_bypass_teu * avg_freight * 0.03
 
-        # 3. 비피크 윈도우 스케줄링 전략
+        # 비피크 윈도우 스케줄링
         offpeak_teu = total_teu * 0.30
         offpeak_saved_hours = 6.0
         savings_offpeak = offpeak_teu * offpeak_saved_hours * (avg_freight / 24.0)
         cost_offpeak = offpeak_teu * 30.0
 
-        # 4. 공컨테이너 재배치 전용선 전략
+        # 공컨테이너 재배치 전용선
         reposition_teu = total_teu * 0.15
         reposition_saved_hours = 12.0
         savings_reposition = reposition_teu * reposition_saved_hours * (avg_freight / 24.0)
         cost_reposition = reposition_teu * 150.0
 
-        # 5. 선사 포트폴리오 최적화 편익
+        # 선사 최적화
         savings_carrier = total_teu * (saved_hours_carrier * W_CARRIER) * (avg_freight / 24.0)
 
-        # 6. 우회 노선 및 슬롯 예약 비용
+        # 우회 및 예약 비용
         reroute_ratio = 0.40 if is_drought else 0.20
         cost_rerouting = total_teu * reroute_ratio * avg_freight * premium_pct
         cost_slot_reserve = total_teu * 0.20 * avg_freight * 0.02
 
-        # 재무적 종합 집계
+        # 재무 집계
         total_savings = (
             savings_carrier + savings_small_vessel + savings_direct +
             savings_offpeak + savings_reposition
@@ -309,7 +296,7 @@ if uploaded_file is not None:
         net_benefit = total_savings - total_cost
         roi = (net_benefit / total_cost) * 100.0 if total_cost > 0 else 0.0
 
-        # 상단 Key Metrics 렌더링
+        # 상단 Key Metrics 출력
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("🎯 예측 정시성 Index", f"{pred_on_time:.1f} %")
         col2.metric("⏱️ 예상 평균 지연", f"{pred_delay:.1f} 시간")
@@ -318,9 +305,9 @@ if uploaded_file is not None:
 
         st.markdown("---")
 
-        # 하단 8대 세부 전략 매트릭스 렌더링
+        # 하단 8대 세부 전략 매트릭스 출력
         st.subheader(f"🎯 [{selected_year}년 기준] 8대 세부 실행 전략 및 재무 ROI 명세")
-        st.caption(f"로드된 파일: `{uploaded_file.name}` (총 {len(df_voyages):,}건 항해 데이터 분석 완료)")
+        st.caption(f"📁 정상 인식된 파일: `{uploaded_file.name}` (총 {len(df_voyages):,}건 분석 완료)")
 
         c1, c2 = st.columns(2)
         with c1:
@@ -372,8 +359,6 @@ if uploaded_file is not None:
 
     except Exception as e:
         st.error(f"파일을 읽는 도중 오류가 발생했습니다: {e}")
-        st.info("파일 형식(.xlsx 또는 .csv)과 컬럼 구성(운임, 지연시간 등)을 확인해 주세요.")
+        st.info("파일 형식(.xlsx 또는 .csv)과 컬럼 구성을 확인해 주세요.")
 else:
-    st.info(
-        "👈 좌측 사이드바에 운항 데이터 파일(파일명 무관)을 드래그 앤 드롭해 주세요."
-    )
+    st.info("👈 좌측 사이드바에 데이터 파일을 업로드해 주세요.")
